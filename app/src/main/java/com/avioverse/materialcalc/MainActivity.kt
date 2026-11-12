@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -144,7 +143,7 @@ private fun CalculatorScreen(dark: Boolean, onDarkChange: (Boolean) -> Unit) {
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("= ", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-                    AnimatedContent(result, transitionSpec = { spring() }, label = "result") {
+                    AnimatedContent(result, label = "result") {
                         Text(it, style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.End, maxLines = 1)
                     }
                 }
