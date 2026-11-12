@@ -31,7 +31,8 @@ jobs:
             echo "sdkmanager not found under $SDK_ROOT/cmdline-tools"
             exit 1
           fi
-          yes | "$SDKMANAGER" --licenses >/dev/null
+          # sdkmanager closes stdin after processing licenses; tolerate yes receiving SIGPIPE.
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Gradle
