@@ -489,7 +489,17 @@ private fun CalculatorScreen(settings: CalcSettings, onSettings: () -> Unit) {
     DisposableEffect(toneGenerator) { onDispose { toneGenerator.release() } }
     fun tapFeedback() {
         if (settings.haptics) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-        if (settings.sound) toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 28)
+        if (settings.sound) {
+            val customUri = settings.customSoundUri
+            if (customUri.isNotBlank()) {
+                runCatching {
+                    MediaPlayer.create(context, Uri.parse(customUri))?.apply {
+                        setOnCompletionListener { it.release() }
+                        start()
+                    } ?: toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 28)
+                }.onFailure { toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 28) }
+            } else toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 28)
+        }
     }
     fun refreshPreview() {
         result = runCatching { formatNumber(ExpressionEvaluator.evaluate(expression), settings) }.getOrDefault("")
