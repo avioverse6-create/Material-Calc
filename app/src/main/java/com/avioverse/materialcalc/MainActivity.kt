@@ -185,7 +185,7 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
         ) {
             item {
                 SettingsSectionTitle("Внешний вид")
-                Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                Card(shape = RoundedCornerShape(settings.cornerRadius.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         Text("Тема приложения", style = MaterialTheme.typography.titleMedium)
                         val modes = listOf("light" to "Светлая", "dark" to "Тёмная", "system" to "Авто")
@@ -227,7 +227,7 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
             }
             item {
                 SettingsSectionTitle("Кнопки калькулятора")
-                Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                Card(shape = RoundedCornerShape(settings.cornerRadius.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Размер кнопок", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
@@ -276,7 +276,7 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
             }
             item {
                 SettingsSectionTitle("Типографика")
-                Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                Card(shape = RoundedCornerShape(settings.cornerRadius.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Семейство шрифта", style = MaterialTheme.typography.titleMedium)
                         val fontChoices = listOf("sans" to "Sans", "serif" to "Serif", "mono" to "Mono", "cursive" to "Cursive")
@@ -322,7 +322,7 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
             }
             item {
                 SettingsSectionTitle("Управление")
-                Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                Card(shape = RoundedCornerShape(settings.cornerRadius.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         SettingsSwitch("Виброотклик", "Тактильная отдача при нажатии", settings.haptics) { onSettingsChange(settings.copy(haptics = it)) }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -339,7 +339,7 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
             }
             item {
                 SettingsSectionTitle("Вычисления")
-                Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                Card(shape = RoundedCornerShape(settings.cornerRadius.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text("Точность результата", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
@@ -356,7 +356,7 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
             }
             item {
                 SettingsSectionTitle("История")
-                Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                Card(shape = RoundedCornerShape(settings.cornerRadius.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         SettingsSwitch("Сохранять историю вычислений", "Показывать последние операции", settings.saveHistory) {
                             onSettingsChange(settings.copy(saveHistory = it))
@@ -592,7 +592,7 @@ private fun CalculatorScreen(settings: CalcSettings, onSettings: () -> Unit) {
                 val settingsScale by animateFloatAsState(if (settingsPressed) 0.86f else 1f, label = "settingsButtonScale")
                 IconButton(onClick = onSettings, modifier = Modifier.scale(settingsScale), interactionSource = settingsInteraction) { Icon(Icons.Rounded.Settings, contentDescription = "Настройки") }
             }
-            Card(Modifier.fillMaxWidth().weight(1f).heightIn(min = 110.dp), shape = RoundedCornerShape(28.dp),
+            Card(Modifier.fillMaxWidth().weight(1f).heightIn(min = 110.dp), shape = RoundedCornerShape(settings.cornerRadius.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                 Column(Modifier.fillMaxSize().padding(if (compact) 14.dp else 18.dp),
                     verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.End) {
