@@ -3,10 +3,14 @@ package com.avioverse.materialcalc
 import android.os.Bundle
 import android.media.AudioManager
 import android.media.ToneGenerator
+import android.media.MediaPlayer
+import android.net.Uri
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -24,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Backspace
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Calculate
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
@@ -71,7 +77,8 @@ private data class CalcSettings(
     val fontSize: Int = 16,
     val fontWeight: Int = 600,
     val cornerRadius: Int = 28,
-    val palette: String = "violet"
+    val palette: String = "violet",
+    val customSoundUri: String = ""
 )
 
 @Composable
@@ -93,7 +100,8 @@ private fun MaterialCalcApp() {
             fontSize = prefs.getInt("fontSize", 16).coerceIn(13, 22),
             fontWeight = prefs.getInt("fontWeight", 600).coerceIn(400, 800),
             cornerRadius = prefs.getInt("cornerRadius", 28).coerceIn(8, 36),
-            palette = prefs.getString("palette", "violet") ?: "violet"
+            palette = prefs.getString("palette", "violet") ?: "violet",
+            customSoundUri = prefs.getString("customSoundUri", "") ?: ""
         ))
     }
     fun updateSettings(next: CalcSettings) {
@@ -111,7 +119,8 @@ private fun MaterialCalcApp() {
             .putInt("fontSize", next.fontSize)
             .putInt("fontWeight", next.fontWeight)
             .putInt("cornerRadius", next.cornerRadius)
-            .putString("palette", next.palette).apply()
+            .putString("palette", next.palette)
+            .putString("customSoundUri", next.customSoundUri).apply()
     }
     val dark = when (settings.theme) {
         "light" -> false
@@ -141,6 +150,25 @@ private fun MaterialCalcApp() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettings) -> Unit, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val soundPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        uri?.let {
+            runCatching { context.contentResolver.takePersistableUriPermission(it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            onSettingsChange(settings.copy(customSoundUri = it.toString(), sound = true))
+        }
+    }
+    fun previewCustomSound() {
+        if (settings.customSoundUri.isNotBlank()) runCatching {
+            MediaPlayer().apply {
+                setDataSource(context, Uri.parse(settings.customSoundUri))
+                setOnCompletionListener { it.release() }
+                setOnErrorListener { player, _, _ -> player.release(); true }
+                prepare()
+                start()
+            }
+        }
+    }
+
     Scaffold(topBar = {
         TopAppBar(title = { Text("Настройки", fontWeight = FontWeight.SemiBold) },
             navigationIcon = { IconButton(onClick = onBack, modifier = Modifier.padding(start = 8.dp).size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer)) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Назад", tint = MaterialTheme.colorScheme.onSecondaryContainer) } })
@@ -293,7 +321,14 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                         SettingsSwitch("Виброотклик", "Тактильная отдача при нажатии", settings.haptics) { onSettingsChange(settings.copy(haptics = it)) }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                        SettingsSwitch("Звук нажатий", "Системный звук клавиш", settings.sound) { onSettingsChange(settings.copy(sound = it)) }
+                        SettingsSwitch("Звук нажатий", "Звук при касании клавиш", settings.sound) { onSettingsChange(settings.copy(sound = it)) }
+                        Text("Свой звук нажатия", style = MaterialTheme.typography.titleSmall)
+                        Text(if (settings.customSoundUri.isBlank()) "Файл не выбран" else "Пользовательский звук добавлен", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            FilledTonalButton(onClick = { soundPicker.launch(arrayOf("audio/*")) }) { Icon(Icons.Rounded.MusicNote, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Выбрать аудио") }
+                            FilledTonalIconButton(onClick = { previewCustomSound() }, enabled = settings.customSoundUri.isNotBlank()) { Icon(Icons.Rounded.PlayArrow, contentDescription = "Прослушать") }
+                        }
+                        if (settings.customSoundUri.isNotBlank()) TextButton(onClick = { onSettingsChange(settings.copy(customSoundUri = "")) }) { Text("Удалить свой звук") }
                     }
                 }
             }
