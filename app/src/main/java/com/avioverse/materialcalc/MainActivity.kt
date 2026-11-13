@@ -14,6 +14,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -360,11 +365,31 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
                 }
             }
             item {
+                SettingsSectionTitle("Индикация Material You")
+                Card(shape = RoundedCornerShape(settings.cornerRadius.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Анимированный индикатор", style = MaterialTheme.typography.titleMedium)
+                        MaterialYouLoader()
+                        Text("Пульсация и смена формы в стиле Material You", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            item {
                 Text("Material Calc 3.0 • Material 3 Expressive", Modifier.fillMaxWidth().padding(top = 10.dp),
                     textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelMedium)
             }
         }
+    }
+}
+
+@Composable
+private fun MaterialYouLoader() {
+    val transition = rememberInfiniteTransition(label = "loader")
+    val pulse by transition.animateFloat(initialValue = 0.78f, targetValue = 1.08f, animationSpec = infiniteRepeatable(tween(720, easing = FastOutSlowInEasing), repeatMode = RepeatMode.Reverse), label = "pulse")
+    Row(Modifier.height(82.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+        Box(Modifier.size(52.dp).scale(pulse).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+        Box(Modifier.size(52.dp).scale(1.86f - pulse).clip(RoundedCornerShape(34)).background(MaterialTheme.colorScheme.primaryContainer))
     }
 }
 
