@@ -1,6 +1,8 @@
 package com.avioverse.materialcalc
 
 import android.os.Bundle
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import androidx.activity.ComponentActivity
@@ -15,6 +17,8 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Backspace
@@ -33,7 +37,10 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -57,7 +64,10 @@ private data class CalcSettings(
     val groupDigits: Boolean = false,
     val saveHistory: Boolean = true,
     val buttonSize: Int = 60,
-    val buttonShape: String = "expressive"
+    val buttonShape: String = "expressive",
+    val fontFamily: String = "sans",
+    val fontSize: Int = 16,
+    val fontWeight: Int = 600
 )
 
 @Composable
@@ -74,7 +84,10 @@ private fun MaterialCalcApp() {
             groupDigits = prefs.getBoolean("groupDigits", false),
             saveHistory = prefs.getBoolean("saveHistory", true),
             buttonSize = prefs.getInt("buttonSize", 60).coerceIn(48, 76),
-            buttonShape = prefs.getString("buttonShape", "expressive") ?: "expressive"
+            buttonShape = prefs.getString("buttonShape", "expressive") ?: "expressive",
+            fontFamily = prefs.getString("fontFamily", "sans") ?: "sans",
+            fontSize = prefs.getInt("fontSize", 16).coerceIn(13, 22),
+            fontWeight = prefs.getInt("fontWeight", 600).coerceIn(400, 800)
         ))
     }
     fun updateSettings(next: CalcSettings) {
@@ -87,7 +100,10 @@ private fun MaterialCalcApp() {
             .putBoolean("groupDigits", next.groupDigits)
             .putBoolean("saveHistory", next.saveHistory)
             .putInt("buttonSize", next.buttonSize)
-            .putString("buttonShape", next.buttonShape).apply()
+            .putString("buttonShape", next.buttonShape)
+            .putString("fontFamily", next.fontFamily)
+            .putInt("fontSize", next.fontSize)
+            .putInt("fontWeight", next.fontWeight).apply()
     }
     val dark = when (settings.theme) {
         "light" -> false
@@ -100,7 +116,7 @@ private fun MaterialCalcApp() {
         dark -> darkColorScheme()
         else -> lightColorScheme()
     }
-    MaterialTheme(colorScheme = colors) {
+    MaterialTheme(colorScheme = colors, typography = calculatorTypography(settings)) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             var page by remember { mutableStateOf(false) }
             if (page) SettingsScreen(settings, ::updateSettings) { page = false }
@@ -150,11 +166,10 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
                         }, valueRange = 48f..76f, steps = 27)
                         Text("Форма кнопок", style = MaterialTheme.typography.titleMedium)
                         val shapes = listOf(
-                            "expressive" to "Expressive",
-                            "squircle" to "Squircle",
-                            "rounded" to "Скруглённая",
-                            "circle" to "Круглая",
-                            "pill" to "Капсула"
+                            "expressive" to "Expressive", "circle" to "Круг",
+                            "squircle" to "Squircle", "pill" to "Капсула",
+                            "soft" to "Мягкая", "wave" to "Wave",
+                            "leaf" to "Лепесток", "cut" to "Срез"
                         )
                         shapes.chunked(2).forEach { line ->
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -183,7 +198,53 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
                                 }
                             }
                         }
-                        Text("В режиме Expressive цифры круглые, а функциональные клавиши — мягкие squircle. При нажатии форма плавно меняется.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Формы вдохновлены выразительной геометрией Material 3. При касании клавиши мягко сжимаются и меняют силуэт.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            item {
+                SettingsSectionTitle("Типографика")
+                Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text("Семейство шрифта", style = MaterialTheme.typography.titleMedium)
+                        val fontChoices = listOf("sans" to "Sans", "serif" to "Serif", "mono" to "Mono", "cursive" to "Cursive")
+                        fontChoices.chunked(2).forEach { line ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                line.forEach { (value, label) ->
+                                    FilterChip(
+                                        modifier = Modifier.weight(1f),
+                                        selected = settings.fontFamily == value,
+                                        onClick = { onSettingsChange(settings.copy(fontFamily = value)) },
+                                        label = { Text(label, maxLines = 1, fontFamily = calculatorFontFamily(value)) }
+                                    )
+                                }
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Размер текста", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                            Text("${settings.fontSize} sp", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(value = settings.fontSize.toFloat(), onValueChange = {
+                            onSettingsChange(settings.copy(fontSize = it.toInt().coerceIn(13, 22)))
+                        }, valueRange = 13f..22f, steps = 8)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Жирность", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                            Text("${settings.fontWeight}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(value = settings.fontWeight.toFloat(), onValueChange = {
+                            onSettingsChange(settings.copy(fontWeight = (it.toInt() / 100 * 100).coerceIn(400, 800)))
+                        }, valueRange = 400f..800f, steps = 3)
+                        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("Предпросмотр", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                Text("Material Calc", fontFamily = calculatorFontFamily(settings.fontFamily),
+                                    fontSize = (settings.fontSize * 1.55f).sp, fontWeight = FontWeight(settings.fontWeight))
+                                Text("Красивый текст. 123 + 456 = 579",
+                                    fontFamily = calculatorFontFamily(settings.fontFamily),
+                                    fontSize = settings.fontSize.sp, fontWeight = FontWeight(settings.fontWeight),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
                     }
                 }
             }
@@ -250,15 +311,56 @@ private fun SettingsSwitch(title: String, subtitle: String, checked: Boolean, on
     }
 }
 
-private fun calculatorButtonShape(mode: String, isDigit: Boolean, pressed: Boolean): RoundedCornerShape {
-    val percent = when (mode) {
-        "circle" -> 50
-        "pill" -> 50
-        "rounded" -> if (pressed) 34 else 24
-        "squircle" -> if (pressed) 24 else 38
-        else -> if (isDigit) { if (pressed) 30 else 50 } else { if (pressed) 24 else 38 }
+private fun calculatorFontFamily(value: String): FontFamily = when (value) {
+    "serif" -> FontFamily.Serif
+    "mono" -> FontFamily.Monospace
+    "cursive" -> FontFamily.Cursive
+    else -> FontFamily.SansSerif
+}
+
+private fun calculatorTypography(settings: CalcSettings): Typography {
+    val base = Typography()
+    val family = calculatorFontFamily(settings.fontFamily)
+    val weight = FontWeight(settings.fontWeight)
+    val size = settings.fontSize.sp
+    return base.copy(
+        displayMedium = base.displayMedium.copy(fontFamily = family, fontWeight = weight, fontSize = (size.value * 2.15f).sp),
+        headlineMedium = base.headlineMedium.copy(fontFamily = family, fontWeight = weight, fontSize = (size.value * 1.65f).sp),
+        titleLarge = base.titleLarge.copy(fontFamily = family, fontWeight = weight, fontSize = (size.value * 1.25f).sp),
+        titleMedium = base.titleMedium.copy(fontFamily = family, fontWeight = weight),
+        titleSmall = base.titleSmall.copy(fontFamily = family, fontWeight = weight),
+        bodyLarge = base.bodyLarge.copy(fontFamily = family, fontWeight = weight, fontSize = size),
+        bodyMedium = base.bodyMedium.copy(fontFamily = family, fontWeight = weight, fontSize = (size.value * 0.9f).sp),
+        bodySmall = base.bodySmall.copy(fontFamily = family, fontWeight = weight, fontSize = (size.value * 0.8f).sp),
+        labelLarge = base.labelLarge.copy(fontFamily = family, fontWeight = weight, fontSize = (size.value * 0.9f).sp),
+        labelMedium = base.labelMedium.copy(fontFamily = family, fontWeight = weight),
+        labelSmall = base.labelSmall.copy(fontFamily = family, fontWeight = weight)
+    )
+}
+
+private fun calculatorButtonShape(mode: String, isDigit: Boolean, pressed: Boolean): Shape {
+    return when (mode) {
+        "cut" -> CutCornerShape(percent = if (pressed) 8 else 18)
+        "wave" -> GenericShape { size, _ ->
+            val w = size.width; val h = size.height
+            moveTo(w * 0.18f, 0f)
+            cubicTo(w * 0.36f, h * 0.12f, w * 0.64f, h * 0.12f, w * 0.82f, 0f)
+            cubicTo(w * 1.04f, h * 0.20f, w * 1.04f, h * 0.80f, w * 0.82f, h)
+            cubicTo(w * 0.64f, h * 0.88f, w * 0.36f, h * 0.88f, w * 0.18f, h)
+            cubicTo(-w * 0.04f, h * 0.80f, -w * 0.04f, h * 0.20f, w * 0.18f, 0f)
+            close()
+        }
+        "leaf" -> GenericShape { size, _ ->
+            moveTo(size.width * 0.5f, 0f)
+            cubicTo(size.width * 0.92f, size.height * 0.08f, size.width, size.height * 0.56f, size.width * 0.5f, size.height)
+            cubicTo(0f, size.height * 0.56f, size.width * 0.08f, size.height * 0.08f, size.width * 0.5f, 0f)
+            close()
+        }
+        "circle", "pill" -> RoundedCornerShape(percent = 50)
+        "soft" -> RoundedCornerShape(percent = if (pressed) 38 else 28)
+        "squircle" -> RoundedCornerShape(percent = if (pressed) 26 else 40)
+        else -> RoundedCornerShape(percent = if (isDigit) { if (pressed) 34 else 50 } else { if (pressed) 25 else 38 })
     }
-    return RoundedCornerShape(percent = percent)
 }
 
 @Composable
@@ -297,7 +399,7 @@ private fun CalculatorKey(label: String, settings: CalcSettings, modifier: Modif
         contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(containerColor = animatedBg, contentColor = fg)
     ) {
-        Text(label, fontSize = 21.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        Text(label, fontFamily = calculatorFontFamily(settings.fontFamily), fontSize = (settings.fontSize * 1.3f).sp, fontWeight = FontWeight(settings.fontWeight), maxLines = 1)
     }
 }
 
@@ -309,9 +411,11 @@ private fun CalculatorScreen(settings: CalcSettings, onSettings: () -> Unit) {
     val history = remember { mutableStateListOf<Pair<String, String>>() }
     val clipboard = LocalClipboardManager.current
     val view = LocalView.current
+    val toneGenerator = remember { ToneGenerator(AudioManager.STREAM_SYSTEM, 55) }
+    DisposableEffect(toneGenerator) { onDispose { toneGenerator.release() } }
     fun tapFeedback() {
         if (settings.haptics) view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-        if (settings.sound) view.playSoundEffect(SoundEffectConstants.CLICK)
+        if (settings.sound) toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 28)
     }
     fun refreshPreview() {
         result = runCatching { formatNumber(ExpressionEvaluator.evaluate(expression), settings) }.getOrDefault("")
@@ -345,10 +449,12 @@ private fun CalculatorScreen(settings: CalcSettings, onSettings: () -> Unit) {
             }
         }
     }
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
         val compact = maxHeight < 700.dp
         val horizontal = if (maxWidth < 360.dp) 12.dp else 16.dp
-        val gap = if (compact) 7.dp else 9.dp
+        val gap = if (compact) 6.dp else 8.dp
+        val fittedButtonSize = ((maxHeight - 390.dp) / 5).coerceIn(46.dp, settings.buttonSize.dp).value.toInt()
+        val fittedSettings = settings.copy(buttonSize = fittedButtonSize)
         Column(Modifier.fillMaxSize().padding(horizontal = horizontal, vertical = if (compact) 6.dp else 10.dp),
             verticalArrangement = Arrangement.spacedBy(gap)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -359,8 +465,14 @@ private fun CalculatorScreen(settings: CalcSettings, onSettings: () -> Unit) {
                     Text("Material Calc", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                     Text("Калькулятор", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = { showHistory = !showHistory }) { Icon(Icons.Rounded.History, contentDescription = "История") }
-                IconButton(onClick = onSettings) { Icon(Icons.Rounded.Settings, contentDescription = "Настройки") }
+                val historyInteraction = remember { MutableInteractionSource() }
+                val historyPressed by historyInteraction.collectIsPressedAsState()
+                val historyScale by animateFloatAsState(if (historyPressed) 0.86f else 1f, label = "historyButtonScale")
+                IconButton(onClick = { showHistory = !showHistory }, modifier = Modifier.scale(historyScale), interactionSource = historyInteraction) { Icon(Icons.Rounded.History, contentDescription = "История") }
+                val settingsInteraction = remember { MutableInteractionSource() }
+                val settingsPressed by settingsInteraction.collectIsPressedAsState()
+                val settingsScale by animateFloatAsState(if (settingsPressed) 0.86f else 1f, label = "settingsButtonScale")
+                IconButton(onClick = onSettings, modifier = Modifier.scale(settingsScale), interactionSource = settingsInteraction) { Icon(Icons.Rounded.Settings, contentDescription = "Настройки") }
             }
             Card(Modifier.fillMaxWidth().weight(1f).heightIn(min = 110.dp), shape = RoundedCornerShape(28.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
@@ -410,7 +522,7 @@ private fun CalculatorScreen(settings: CalcSettings, onSettings: () -> Unit) {
             rows.forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap)) {
                     row.forEach { key ->
-                        CalculatorKey(key, settings, Modifier.weight(1f)) { press(key) }
+                        CalculatorKey(key, fittedSettings, Modifier.weight(1f)) { press(key) }
                     }
                 }
             }
