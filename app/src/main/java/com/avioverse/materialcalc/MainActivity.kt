@@ -203,6 +203,20 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
                         SettingsSwitch("Динамические цвета Material You", "Подстраивать палитру под обои Android", settings.dynamicColor) {
                             onSettingsChange(settings.copy(dynamicColor = it))
                         }
+                        Text("Цветовые коллекции", style = MaterialTheme.typography.titleSmall)
+                        val palettes = listOf("violet" to "Violet", "ocean" to "Ocean", "rose" to "Rose", "mint" to "Mint", "amber" to "Amber", "mono" to "Mono")
+                        palettes.chunked(3).forEach { line ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                line.forEach { (value, label) ->
+                                    FilterChip(
+                                        modifier = Modifier.weight(1f),
+                                        selected = settings.palette == value && !settings.dynamicColor,
+                                        onClick = { onSettingsChange(settings.copy(palette = value, dynamicColor = false)) },
+                                        label = { Text(label, maxLines = 1) }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -503,7 +517,7 @@ private fun CalculatorKey(label: String, settings: CalcSettings, modifier: Modif
         onClick = onClick,
         modifier = modifier.scale(scale).height(settings.buttonSize.dp),
         interactionSource = interaction,
-        shape = RoundedCornerShape(percent = corner.toInt()),
+        shape = calculatorButtonShape(settings.buttonShape, label.length == 1 && label[0].isDigit(), pressed),
         contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.buttonColors(containerColor = animatedBg, contentColor = fg)
     ) {
@@ -518,6 +532,7 @@ private fun CalculatorScreen(settings: CalcSettings, onSettings: () -> Unit) {
     var showHistory by remember { mutableStateOf(false) }
     val history = remember { mutableStateListOf<Pair<String, String>>() }
     val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     val view = LocalView.current
     val toneGenerator = remember { ToneGenerator(AudioManager.STREAM_SYSTEM, 55) }
     DisposableEffect(toneGenerator) { onDispose { toneGenerator.release() } }
