@@ -415,6 +415,15 @@ private fun calculatorTypography(settings: CalcSettings): Typography {
 private fun calculatorButtonShape(mode: String, isDigit: Boolean, pressed: Boolean): Shape {
     return when (mode) {
         "cut" -> CutCornerShape(percent = if (pressed) 8 else 18)
+        "arch" -> GenericShape { size, _ -> moveTo(0f, size.height); lineTo(0f, size.height * 0.45f); quadraticTo(size.width * 0.5f, -size.height * 0.15f, size.width, size.height * 0.45f); lineTo(size.width, size.height); close() }
+        "semicircle" -> GenericShape { size, _ -> moveTo(0f, size.height); lineTo(0f, size.height * 0.5f); quadraticTo(size.width * 0.5f, -size.height * 0.2f, size.width, size.height * 0.5f); lineTo(size.width, size.height); close() }
+        "oval" -> RoundedCornerShape(percent = 50)
+        "diamond" -> GenericShape { size, _ -> moveTo(size.width * 0.5f, 0f); lineTo(size.width, size.height * 0.5f); lineTo(size.width * 0.5f, size.height); lineTo(0f, size.height * 0.5f); close() }
+        "triangle" -> GenericShape { size, _ -> moveTo(size.width * 0.5f, 0f); lineTo(size.width, size.height); lineTo(0f, size.height); close() }
+        "fan" -> GenericShape { size, _ -> moveTo(size.width * 0.5f, size.height); cubicTo(-size.width * 0.1f, size.height * 0.55f, size.width * 0.05f, 0f, size.width * 0.5f, 0f); cubicTo(size.width * 0.95f, 0f, size.width * 1.1f, size.height * 0.55f, size.width * 0.5f, size.height); close() }
+        "gem" -> GenericShape { size, _ -> moveTo(size.width * 0.5f, 0f); lineTo(size.width * 0.9f, size.height * 0.25f); lineTo(size.width, size.height * 0.65f); lineTo(size.width * 0.5f, size.height); lineTo(0f, size.height * 0.65f); lineTo(size.width * 0.1f, size.height * 0.25f); close() }
+        "clover" -> RoundedCornerShape(percent = 34)
+        "sunny" -> GenericShape { size, _ -> val cx = size.width / 2f; val cy = size.height / 2f; val r = minOf(cx, cy); for (i in 0 until 32) { val a = (Math.PI * 2 * i / 32 - Math.PI / 2).toFloat(); val rr = if (i % 4 == 0) r else r * 0.78f; val x = cx + kotlin.math.cos(a) * rr; val y = cy + kotlin.math.sin(a) * rr; if (i == 0) moveTo(x, y) else lineTo(x, y) }; close() }
         "wave" -> GenericShape { size, _ ->
             val w = size.width; val h = size.height
             moveTo(w * 0.18f, 0f)
