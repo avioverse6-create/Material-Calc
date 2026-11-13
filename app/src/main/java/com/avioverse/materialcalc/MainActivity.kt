@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Backspace
+import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Calculate
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
@@ -67,7 +69,8 @@ private data class CalcSettings(
     val buttonShape: String = "expressive",
     val fontFamily: String = "sans",
     val fontSize: Int = 16,
-    val fontWeight: Int = 600
+    val fontWeight: Int = 600,
+    val cornerRadius: Int = 28
 )
 
 @Composable
@@ -87,7 +90,8 @@ private fun MaterialCalcApp() {
             buttonShape = prefs.getString("buttonShape", "expressive") ?: "expressive",
             fontFamily = prefs.getString("fontFamily", "sans") ?: "sans",
             fontSize = prefs.getInt("fontSize", 16).coerceIn(13, 22),
-            fontWeight = prefs.getInt("fontWeight", 600).coerceIn(400, 800)
+            fontWeight = prefs.getInt("fontWeight", 600).coerceIn(400, 800),
+            cornerRadius = prefs.getInt("cornerRadius", 28).coerceIn(8, 36)
         ))
     }
     fun updateSettings(next: CalcSettings) {
@@ -103,7 +107,8 @@ private fun MaterialCalcApp() {
             .putString("buttonShape", next.buttonShape)
             .putString("fontFamily", next.fontFamily)
             .putInt("fontSize", next.fontSize)
-            .putInt("fontWeight", next.fontWeight).apply()
+            .putInt("fontWeight", next.fontWeight)
+            .putInt("cornerRadius", next.cornerRadius).apply()
     }
     val dark = when (settings.theme) {
         "light" -> false
@@ -130,7 +135,7 @@ private fun MaterialCalcApp() {
 private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettings) -> Unit, onBack: () -> Unit) {
     Scaffold(topBar = {
         TopAppBar(title = { Text("Настройки", fontWeight = FontWeight.SemiBold) },
-            navigationIcon = { TextButton(onClick = onBack) { Text("Назад") } })
+            navigationIcon = { IconButton(onClick = onBack, modifier = Modifier.padding(start = 8.dp).size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer)) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Назад", tint = MaterialTheme.colorScheme.onSecondaryContainer) } })
     }) { padding ->
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
@@ -142,13 +147,39 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
                 Card(shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         Text("Тема приложения", style = MaterialTheme.typography.titleMedium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                            listOf("system" to "Системная", "light" to "Светлая", "dark" to "Тёмная").forEach { (value, label) ->
-                                FilterChip(selected = settings.theme == value, onClick = { onSettingsChange(settings.copy(theme = value)) }, label = { Text(label) })
+                        val modes = listOf("light" to "Светлая", "dark" to "Тёмная", "system" to "Авто")
+                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                            modes.forEachIndexed { index, item ->
+                                SegmentedButton(
+                                    selected = settings.theme == item.first,
+                                    onClick = { onSettingsChange(settings.copy(theme = item.first)) },
+                                    shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                                    icon = { if (settings.theme == item.first) Icon(Icons.Rounded.Check, contentDescription = null) },
+                                    label = { Text(item.second, maxLines = 1) }
+                                )
                             }
                         }
                         SettingsSwitch("Динамические цвета Material You", "Подстраивать палитру под обои Android", settings.dynamicColor) {
                             onSettingsChange(settings.copy(dynamicColor = it))
+                        }
+                    }
+                }
+            }
+            item {
+                SettingsSectionTitle("Формы интерфейса")
+                Card(shape = RoundedCornerShape(settings.cornerRadius.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Скругление поверхностей", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                            Text("${settings.cornerRadius} dp", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                        }
+                        Slider(value = settings.cornerRadius.toFloat(), onValueChange = { onSettingsChange(settings.copy(cornerRadius = it.toInt().coerceIn(8, 36))) }, valueRange = 8f..36f, steps = 27)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(10, 18, 28, 36).forEach { radius ->
+                                Box(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(radius.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                                    Text("$radius", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                }
+                            }
                         }
                     }
                 }
