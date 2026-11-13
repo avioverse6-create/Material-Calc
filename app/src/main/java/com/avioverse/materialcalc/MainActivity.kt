@@ -70,7 +70,8 @@ private data class CalcSettings(
     val fontFamily: String = "sans",
     val fontSize: Int = 16,
     val fontWeight: Int = 600,
-    val cornerRadius: Int = 28
+    val cornerRadius: Int = 28,
+    val palette: String = "violet"
 )
 
 @Composable
@@ -91,7 +92,8 @@ private fun MaterialCalcApp() {
             fontFamily = prefs.getString("fontFamily", "sans") ?: "sans",
             fontSize = prefs.getInt("fontSize", 16).coerceIn(13, 22),
             fontWeight = prefs.getInt("fontWeight", 600).coerceIn(400, 800),
-            cornerRadius = prefs.getInt("cornerRadius", 28).coerceIn(8, 36)
+            cornerRadius = prefs.getInt("cornerRadius", 28).coerceIn(8, 36),
+            palette = prefs.getString("palette", "violet") ?: "violet"
         ))
     }
     fun updateSettings(next: CalcSettings) {
@@ -108,7 +110,8 @@ private fun MaterialCalcApp() {
             .putString("fontFamily", next.fontFamily)
             .putInt("fontSize", next.fontSize)
             .putInt("fontWeight", next.fontWeight)
-            .putInt("cornerRadius", next.cornerRadius).apply()
+            .putInt("cornerRadius", next.cornerRadius)
+            .putString("palette", next.palette).apply()
     }
     val dark = when (settings.theme) {
         "light" -> false
@@ -118,6 +121,11 @@ private fun MaterialCalcApp() {
     val colors = when {
         settings.dynamicColor && android.os.Build.VERSION.SDK_INT >= 31 && dark -> dynamicDarkColorScheme(context)
         settings.dynamicColor && android.os.Build.VERSION.SDK_INT >= 31 -> dynamicLightColorScheme(context)
+        settings.palette == "ocean" -> if (dark) darkColorScheme(primary = androidx.compose.ui.graphics.Color(0xFF80D5E8)) else lightColorScheme(primary = androidx.compose.ui.graphics.Color(0xFF006879))
+        settings.palette == "rose" -> if (dark) darkColorScheme(primary = androidx.compose.ui.graphics.Color(0xFFFFB1C1)) else lightColorScheme(primary = androidx.compose.ui.graphics.Color(0xFF9C4057))
+        settings.palette == "mint" -> if (dark) darkColorScheme(primary = androidx.compose.ui.graphics.Color(0xFF8DD9B8)) else lightColorScheme(primary = androidx.compose.ui.graphics.Color(0xFF176B4A))
+        settings.palette == "amber" -> if (dark) darkColorScheme(primary = androidx.compose.ui.graphics.Color(0xFFFFD18B)) else lightColorScheme(primary = androidx.compose.ui.graphics.Color(0xFF805600))
+        settings.palette == "mono" -> if (dark) darkColorScheme(primary = androidx.compose.ui.graphics.Color(0xFFD0D0D0)) else lightColorScheme(primary = androidx.compose.ui.graphics.Color(0xFF505050))
         dark -> darkColorScheme()
         else -> lightColorScheme()
     }
