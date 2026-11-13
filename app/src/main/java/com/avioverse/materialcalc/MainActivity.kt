@@ -233,7 +233,7 @@ private fun SettingsScreen(settings: CalcSettings, onSettingsChange: (CalcSettin
                         }, valueRange = 48f..76f, steps = 27)
                         Text("Форма кнопок", style = MaterialTheme.typography.titleMedium)
                         val shapes = listOf(
-                            "expressive" to "Expressive", "circle" to "Круг",
+                            "expressive" to "Expressive", "circle" to "Circle", "sunny" to "Very Sunny", "clover" to "Clover", "gem" to "Gem", "arch" to "Arch", "semicircle" to "Semicircle", "oval" to "Oval", "triangle" to "Triangle", "diamond" to "Diamond", "fan" to "Fan",
                             "squircle" to "Squircle", "pill" to "Капсула",
                             "soft" to "Мягкая", "wave" to "Wave",
                             "leaf" to "Лепесток", "cut" to "Срез"
